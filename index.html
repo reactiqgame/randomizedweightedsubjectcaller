@@ -4,55 +4,207 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subject Caller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .add-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        
+        .subject-item {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+        }
+        
+        .subject-item input[type="text"] {
+            width: 200px;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        
+        .subject-item input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        #addSubject {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+        
+        #addSubject:hover {
+            background-color: #45a049;
+        }
+        
+        .remove-subject {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .remove-subject:hover {
+            background-color: #da190b;
+        }
+        
+        .settings {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        
+        .settings label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .settings select,
+        .settings input {
+            padding: 5px;
+            margin-right: 20px;
+        }
+        
+        .probability-info {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #fff9e6;
+            border-left: 4px solid #ffc107;
+            font-size: 16px;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        #startButton {
+            background-color: #2196F3;
+            color: white;
+            font-size: 18px;
+            padding: 12px 30px;
+            margin-right: 10px;
+        }
+        
+        #startButton:hover:not(:disabled) {
+            background-color: #0b7dda;
+        }
+        
+        #startButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #stopButton {
+            background-color: #ff9800;
+            color: white;
+            font-size: 18px;
+            padding: 12px 30px;
+        }
+        
+        #stopButton:hover:not(:disabled) {
+            background-color: #e68900;
+        }
+        
+        #stopButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .current-display {
+            margin-top: 30px;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border: 3px solid #007bff;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .current-display h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        #currentSubject {
+            font-size: 36px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Subject Caller</h1>
+    <div class="header">
+        <h1>Subject Caller</h1>
+    </div>
     
-    <div>
+    <div class="add-section">
         <button id="addSubject">Add Subject</button>
-        <span id="subjectCount">Subjects: 0/100</span>
+        <span id="subjectCount" style="margin-left: 20px; font-weight: bold;">Subjects: 0/100</span>
     </div>
     
     <div id="subjectsContainer"></div>
     
-    <div>
-        <h3>Settings</h3>
-        <label>Speed of Voice:</label>
-        <select id="voiceSpeed">
-            <option value="0.7">Slow</option>
-            <option value="1.0" selected>Medium</option>
-            <option value="1.5">Fast</option>
-        </select>
-        
-        <br><br>
-        
-        <label>Call interval (seconds):</label>
-        <input type="number" id="callInterval" value="3" min="1" max="60">
-        
-        <br><br>
-        
-        <div>
-            Total Probability: <span id="totalProbability">0.00</span>
-            <span id="probabilityWarning" style="color: red;"></span>
-        </div>
-        
-        <br>
-        
-        <button id="startButton" disabled>Start</button>
-        <button id="stopButton" disabled>Stop</button>
+    <div class="probability-info">
+        <strong>Total Probability:</strong> <span id="totalProbability">0.00</span>
+        <span id="probabilityWarning" style="margin-left: 15px; font-weight: bold;"></span>
     </div>
     
-    <div>
+    <div class="settings">
+        <h3>Settings</h3>
+        <div style="margin-bottom: 10px;">
+            <label>Speed of Voice:</label>
+            <select id="voiceSpeed">
+                <option value="0.7">Slow</option>
+                <option value="1.0" selected>Medium</option>
+                <option value="1.5">Fast</option>
+            </select>
+        </div>
+        
+        <div>
+            <label>Call interval (seconds):</label>
+            <input type="number" id="callInterval" value="3" min="1" max="60" style="width: 80px;">
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="startButton" disabled>Start Calling</button>
+        <button id="stopButton" disabled>Stop Calling</button>
+    </div>
+    
+    <div class="current-display">
         <h3>Currently Called:</h3>
-        <p id="currentSubject" style="font-size: 24px; font-weight: bold;">---</p>
+        <p id="currentSubject">---</p>
     </div>
 
     <script>
         let subjects = [];
         let isRunning = false;
         let intervalId = null;
-        let speechQueue = [];
-        let isSpeaking = false;
 
         const addSubjectBtn = document.getElementById('addSubject');
         const subjectsContainer = document.getElementById('subjectsContainer');
@@ -65,6 +217,7 @@
         const voiceSpeedSelect = document.getElementById('voiceSpeed');
         const callIntervalInput = document.getElementById('callInterval');
 
+        // Event listeners
         addSubjectBtn.addEventListener('click', addSubject);
         startButton.addEventListener('click', startCalling);
         stopButton.addEventListener('click', stopCalling);
@@ -75,7 +228,7 @@
                 return;
             }
 
-            const subjectId = Date.now();
+            const subjectId = Date.now() + Math.random(); // Ensure unique ID
             const subject = {
                 id: subjectId,
                 name: '',
@@ -91,19 +244,17 @@
         function renderSubject(subject) {
             const subjectDiv = document.createElement('div');
             subjectDiv.id = `subject-${subject.id}`;
-            subjectDiv.style.margin = '10px 0';
-            subjectDiv.style.padding = '10px';
-            subjectDiv.style.border = '1px solid #ccc';
+            subjectDiv.className = 'subject-item';
 
             subjectDiv.innerHTML = `
                 <label>Name:</label>
                 <input type="text" class="subject-name" data-id="${subject.id}" value="${subject.name}" placeholder="Enter subject name">
                 
-                <label style="margin-left: 20px;">Probability:</label>
+                <label>Probability:</label>
                 <input type="number" class="subject-probability" data-id="${subject.id}" value="${subject.probability}" 
                        min="0" max="1" step="0.01" placeholder="0.00">
                 
-                <button class="remove-subject" data-id="${subject.id}" style="margin-left: 20px;">Remove</button>
+                <button class="remove-subject" data-id="${subject.id}">Remove</button>
             `;
 
             subjectsContainer.appendChild(subjectDiv);
@@ -114,16 +265,16 @@
             const removeButton = subjectDiv.querySelector('.remove-subject');
 
             nameInput.addEventListener('input', (e) => {
-                const subject = subjects.find(s => s.id == e.target.dataset.id);
-                if (subject) {
-                    subject.name = e.target.value;
+                const subj = subjects.find(s => s.id == e.target.dataset.id);
+                if (subj) {
+                    subj.name = e.target.value;
                 }
             });
 
             probabilityInput.addEventListener('input', (e) => {
-                const subject = subjects.find(s => s.id == e.target.dataset.id);
-                if (subject) {
-                    subject.probability = parseFloat(e.target.value) || 0;
+                const subj = subjects.find(s => s.id == e.target.dataset.id);
+                if (subj) {
+                    subj.probability = parseFloat(e.target.value) || 0;
                     updateTotalProbability();
                 }
             });
@@ -151,7 +302,7 @@
             const total = subjects.reduce((sum, subject) => sum + subject.probability, 0);
             totalProbabilitySpan.textContent = total.toFixed(2);
 
-            if (Math.abs(total - 1.0) < 0.001 && subjects.length > 0) {
+            if (Math.abs(total - 1.0) < 0.01 && subjects.length > 0) {
                 probabilityWarning.textContent = '✓ Ready to start';
                 probabilityWarning.style.color = 'green';
                 startButton.disabled = false;
@@ -181,53 +332,32 @@
         }
 
         function speak(text) {
-            return new Promise((resolve) => {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = parseFloat(voiceSpeedSelect.value);
-                utterance.onend = () => {
-                    resolve();
-                };
-                utterance.onerror = () => {
-                    resolve();
-                };
-                speechSynthesis.speak(utterance);
-            });
-        }
-
-        async function processSpeechQueue() {
-            if (isSpeaking || speechQueue.length === 0) {
-                return;
-            }
-
-            isSpeaking = true;
-            const text = speechQueue.shift();
-            await speak(text);
-            isSpeaking = false;
-
-            // Process next item in queue
-            if (speechQueue.length > 0) {
-                processSpeechQueue();
-            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            const speed = parseFloat(voiceSpeedSelect.value);
+            utterance.rate = speed;
+            
+            // Cancel any ongoing speech before starting new one
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utterance);
         }
 
         function callSubject() {
             const subject = selectRandomSubject();
-            if (subject && subject.name) {
+            if (subject && subject.name && subject.name.trim() !== '') {
                 currentSubjectDisplay.textContent = subject.name;
-                
-                // Cancel any ongoing speech
-                speechSynthesis.cancel();
-                speechQueue = [];
-                isSpeaking = false;
-                
-                // Add to queue and process
-                speechQueue.push(subject.name);
-                processSpeechQueue();
+                speak(subject.name);
             }
         }
 
         function startCalling() {
             if (isRunning) return;
+
+            // Validate that we have subjects with names
+            const validSubjects = subjects.filter(s => s.name && s.name.trim() !== '');
+            if (validSubjects.length === 0) {
+                alert('Please add at least one subject with a name');
+                return;
+            }
 
             isRunning = true;
             startButton.disabled = true;
@@ -238,6 +368,10 @@
             document.querySelectorAll('.subject-name, .subject-probability, .remove-subject').forEach(el => {
                 el.disabled = true;
             });
+
+            // Disable settings
+            voiceSpeedSelect.disabled = true;
+            callIntervalInput.disabled = true;
 
             // Call first subject immediately
             callSubject();
@@ -260,6 +394,10 @@
                 el.disabled = false;
             });
 
+            // Re-enable settings
+            voiceSpeedSelect.disabled = false;
+            callIntervalInput.disabled = false;
+
             // Clear interval
             if (intervalId) {
                 clearInterval(intervalId);
@@ -268,8 +406,6 @@
 
             // Stop any ongoing speech
             speechSynthesis.cancel();
-            speechQueue = [];
-            isSpeaking = false;
 
             currentSubjectDisplay.textContent = '---';
         }
@@ -277,7 +413,8 @@
         // Initialize
         updateSubjectCount();
         updateTotalProbability();
+        
+        console.log('Subject Caller initialized successfully');
     </script>
 </body>
 </html>
-
