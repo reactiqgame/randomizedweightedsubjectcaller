@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import random
 import pyttsx3
 
@@ -9,83 +9,90 @@ engine = pyttsx3.init()
 class SubjectCallerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Voice Subject Caller")
+        self.root.title("Pro Subject Caller")
+        self.root.geometry("400x600")
         self.subjects = []
         self.total_weight = 0.0
 
-        # --- UI Elements ---
-        self.label_status = tk.Label(root, text="Remaining: 1.00", font=("Arial", 12, "bold"))
+        # --- UI Header ---
+        self.label_status = tk.Label(root, text="Remaining Probability: 1.00", font=("Arial", 12, "bold"))
         self.label_status.pack(pady=10)
 
-        # Input Frame
-        frame = tk.Frame(root)
-        frame.pack(pady=10)
+        # --- Input Section ---
+        input_frame = tk.LabelFrame(root, text=" Add New Subject ", padx=10, pady=10)
+        input_frame.pack(pady=10, fill="x", padx=20)
 
-        tk.Label(frame, text="Name:").grid(row=0, column=0)
-        self.entry_name = tk.Entry(frame)
-        self.entry_name.grid(row=0, column=1, padx=5)
+        tk.Label(input_frame, text="Name:").grid(row=0, column=0, sticky="w")
+        self.entry_name = tk.Entry(input_frame)
+        self.entry_name.grid(row=0, column=1, padx=5, sticky="ew")
 
-        tk.Label(frame, text="Weight (0.01-1.0):").grid(row=1, column=0)
-        self.entry_weight = tk.Entry(frame)
-        self.entry_weight.grid(row=1, column=1, padx=5)
+        tk.Label(input_frame, text="Frequency (Weight):").grid(row=1, column=0, sticky="w")
+        self.weight_slider = tk.Scale(input_frame, from_=0.01, to=1.00, resolution=0.01, orient=tk.HORIZONTAL)
+        self.weight_slider.set(0.10) # Default
+        self.weight_slider.grid(row=1, column=1, padx=5, sticky="ew")
 
-        # Buttons
-        self.btn_add = tk.Button(root, text="Add Subject", command=self.add_subject, bg="#e1f5fe")
-        self.btn_add.pack(pady=5)
+        self.btn_add = tk.Button(input_frame, text="Add Subject", command=self.add_subject, bg="#e1f5fe")
+        self.btn_add.grid(row=2, column=0, columnspan=2, pady=10, sticky="ew")
 
-        self.btn_start = tk.Button(root, text="START (Call Subject)", command=self.call_subject, 
-                                   state=tk.DISABLED, bg="#c8e6c9", font=("Arial", 10, "bold"))
-        self.btn_start.pack(pady=10, fill=tk.X, padx=20)
-
-        self.btn_reset = tk.Button(root, text="Reset", command=self.reset, bg="#ffcdd2")
-        self.btn_reset.pack(pady=5)
-
-        # Listbox to show subjects
+        # --- Subject List ---
+        tk.Label(root, text="Current Subjects & Probability:").pack()
         self.listbox = tk.Listbox(root, height=6)
-        self.listbox.pack(pady=10, fill=tk.BOTH, padx=20)
+        self.listbox.pack(pady=5, fill=tk.BOTH, padx=20)
+
+        # --- Voice Speed Control ---
+        voice_frame = tk.LabelFrame(root, text=" Voice Settings ", padx=10, pady=10)
+        voice_frame.pack(pady=10, fill="x", padx=20)
+        
+        tk.Label(voice_frame, text="Speed (WPM):").pack(side=tk.LEFT)
+        self.speed_slider = tk.Scale(voice_frame, from_=50, to=300, orient=tk.HORIZONTAL)
+        self.speed_slider.set(175) # Normal speaking speed
+        self.speed_slider.pack(side=tk.LEFT, fill="x", expand=True)
+
+        # --- Action Buttons ---
+        self.btn_start = tk.Button(root, text="START CALLING", command=self.call_subject, 
+                                   state=tk.DISABLED, bg="#c8e6c9", font=("Arial", 12, "bold"))
+        self.btn_start.pack(pady=5, fill=tk.X, padx=20)
+
+        self.btn_reset = tk.Button(root, text="Reset Everything", command=self.reset, bg="#ffcdd2")
+        self.btn_reset.pack(pady=5)
 
     def add_subject(self):
         name = self.entry_name.get().strip()
-        try:
-            weight = round(float(self.entry_weight.get()), 2)
-            remaining = round(1.0 - self.total_weight, 2)
+        weight = round(self.weight_slider.get(), 2)
+        remaining = round(1.0 - self.total_weight, 2)
 
-            if name == "":
-                messagebox.showwarning("Error", "Please enter a name.")
-            elif weight > remaining:
-                messagebox.showwarning("Error", f"Weight too high! Only {remaining} left.")
-            elif weight <= 0:
-                messagebox.showwarning("Error", "Weight must be higher than 0.")
-            else:
-                self.subjects.append((name, weight))
-                self.total_weight = round(self.total_weight + weight, 2)
-                self.listbox.insert(tk.END, f"{name} - {int(weight*100)}%")
-                
-                # Update status
-                new_remaining = round(1.0 - self.total_weight, 2)
-                self.label_status.config(text=f"Remaining: {new_remaining}")
-                
-                # Clear inputs
-                self.entry_name.delete(0, tk.END)
-                self.entry_weight.delete(0, tk.END)
+        if not name:
+            messagebox.showwarning("Input Error", "Please give the subject a name.")
+            return
 
-                # Enable Start if sum is 1.0
-                if self.total_weight >= 1.0:
-                    self.btn_start.config(state=tk.NORMAL)
-                    self.btn_add.config(state=tk.DISABLED)
-                    self.label_status.config(text="Total Reached: 1.0 (Ready!)", fg="green")
+        if weight > remaining:
+            messagebox.showwarning("Math Error", f"Cannot add {weight}. Only {remaining} remains.")
+            return
 
-        except ValueError:
-            messagebox.showerror("Error", "Please enter a valid number for weight.")
+        self.subjects.append((name, weight))
+        self.total_weight = round(self.total_weight + weight, 2)
+        self.listbox.insert(tk.END, f"{name} | Prob: {int(weight*100)}% (Weight: {weight})")
+        
+        # Update UI
+        new_remaining = round(1.0 - self.total_weight, 2)
+        self.label_status.config(text=f"Remaining Probability: {new_remaining}")
+        self.entry_name.delete(0, tk.END)
+
+        if self.total_weight >= 1.0:
+            self.btn_start.config(state=tk.NORMAL)
+            self.btn_add.config(state=tk.DISABLED)
+            self.label_status.config(text="Ready to Call!", fg="green")
 
     def call_subject(self):
         names = [s[0] for s in self.subjects]
         weights = [s[1] for s in self.subjects]
         
-        # Weighted random choice
         result = random.choices(names, weights=weights, k=1)[0]
         
-        # Voice output
+        # Voice Speed Adjustment
+        speed = self.speed_slider.get()
+        engine.setProperty('rate', speed)
+        
         engine.say(f"The selected subject is {result}")
         engine.runAndWait()
         
@@ -95,12 +102,11 @@ class SubjectCallerApp:
         self.subjects = []
         self.total_weight = 0.0
         self.listbox.delete(0, tk.END)
-        self.label_status.config(text="Remaining: 1.00", fg="black")
+        self.label_status.config(text="Remaining Probability: 1.00", fg="black")
         self.btn_start.config(state=tk.DISABLED)
         self.btn_add.config(state=tk.NORMAL)
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry("300x450")
     app = SubjectCallerApp(root)
     root.mainloop()
