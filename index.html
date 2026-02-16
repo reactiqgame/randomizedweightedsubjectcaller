@@ -1,183 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weighted Subject Caller</title>
-
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    display: flex;
-    justify-content: center;
-    padding: 40px;
-}
-
-.container {
-    background: white;
-    padding: 25px;
-    width: 420px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-h1 {
-    text-align: center;
-}
-
-input, button {
-    width: 100%;
-    padding: 8px;
-    margin: 6px 0;
-}
-
-button {
-    cursor: pointer;
-    font-weight: bold;
-}
-
-button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-#subjectList {
-    height: 120px;
-    width: 100%;
-}
-
-.status {
-    font-weight: bold;
-    margin: 8px 0;
-}
-
-.remaining {
-    color: #0077cc;
-}
-
-.valid {
-    color: green;
-}
-
-.invalid {
-    color: red;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subject Caller</title>
 </head>
-
 <body>
+    <h1>Subject Caller</h1>
+    
+    <div>
+        <button id="addSubject">Add Subject</button>
+        <span id="subjectCount">Subjects: 0/100</span>
+    </div>
+    
+    <div id="subjectsContainer"></div>
+    
+    <div>
+        <h3>Settings</h3>
+        <label>Speed of Voice:</label>
+        <select id="voiceSpeed">
+            <option value="0.7">Slow</option>
+            <option value="1.0" selected>Medium</option>
+            <option value="1.5">Fast</option>
+        </select>
+        
+        <br><br>
+        
+        <label>Call interval (seconds):</label>
+        <input type="number" id="callInterval" value="3" min="1" max="60">
+        
+        <br><br>
+        
+        <div>
+            Total Probability: <span id="totalProbability">0.00</span>
+            <span id="probabilityWarning" style="color: red;"></span>
+        </div>
+        
+        <br>
+        
+        <button id="startButton" disabled>Start</button>
+        <button id="stopButton" disabled>Stop</button>
+    </div>
+    
+    <div>
+        <h3>Currently Called:</h3>
+        <p id="currentSubject" style="font-size: 24px; font-weight: bold;">---</p>
+    </div>
 
-<div class="container">
-<h1>Weighted Subject Caller</h1>
+    <script>
+        let subjects = [];
+        let isRunning = false;
+        let intervalId = null;
+        let speechQueue = [];
+        let isSpeaking = false;
 
-<label>Subject Name</label>
-<input type="text" id="subjectName">
+        const addSubjectBtn = document.getElementById('addSubject');
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const subjectCount = document.getElementById('subjectCount');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const totalProbabilitySpan = document.getElementById('totalProbability');
+        const probabilityWarning = document.getElementById('probabilityWarning');
+        const currentSubjectDisplay = document.getElementById('currentSubject');
+        const voiceSpeedSelect = document.getElementById('voiceSpeed');
+        const callIntervalInput = document.getElementById('callInterval');
 
-<label>Weight (0.01 - 1.00)</label>
-<input type="number" id="subjectWeight" step="0.01" min="0.01" max="1.00">
+        addSubjectBtn.addEventListener('click', addSubject);
+        startButton.addEventListener('click', startCalling);
+        stopButton.addEventListener('click', stopCalling);
 
-<button id="addBtn">Add Subject</button>
+        function addSubject() {
+            if (subjects.length >= 100) {
+                alert('Maximum 100 subjects allowed');
+                return;
+            }
 
-<div class="status">
-Remaining Probability: <span id="remaining" class="remaining">1.00</span>
-</div>
+            const subjectId = Date.now();
+            const subject = {
+                id: subjectId,
+                name: '',
+                probability: 0
+            };
 
-<select id="subjectList" size="6"></select>
-
-<label>Voice Speed</label>
-<input type="range" id="voiceSpeed" min="0.5" max="2" step="0.1" value="1">
-
-<button id="startBtn" disabled>Start</button>
-<button id="resetBtn">Reset</button>
-
-</div>
-
-<script>
-let subjects = [];
-let totalWeight = 0;
-
-const addBtn = document.getElementById("addBtn");
-const startBtn = document.getElementById("startBtn");
-const resetBtn = document.getElementById("resetBtn");
-const remainingDisplay = document.getElementById("remaining");
-const subjectList = document.getElementById("subjectList");
-const voiceSpeed = document.getElementById("voiceSpeed");
-
-function updateRemaining() {
-    let remaining = (1 - totalWeight).toFixed(2);
-    remainingDisplay.textContent = remaining;
-
-    if (remaining === "0.00") {
-        remainingDisplay.className = "valid";
-        startBtn.disabled = false;
-    } else {
-        remainingDisplay.className = "remaining";
-        startBtn.disabled = true;
-    }
-}
-
-addBtn.addEventListener("click", () => {
-    const name = document.getElementById("subjectName").value.trim();
-    const weight = parseFloat(document.getElementById("subjectWeight").value);
-
-    if (!name || isNaN(weight)) return;
-
-    if (weight < 0.01 || weight > 1.00) {
-        alert("Weight must be between 0.01 and 1.00");
-        return;
-    }
-
-    if ((totalWeight + weight) > 1.000001) {
-        alert("Weight exceeds remaining probability.");
-        return;
-    }
-
-    subjects.push({ name, weight });
-    totalWeight += weight;
-
-    const option = document.createElement("option");
-    option.text = `${name} (${weight.toFixed(2)})`;
-    subjectList.add(option);
-
-    document.getElementById("subjectName").value = "";
-    document.getElementById("subjectWeight").value = "";
-
-    updateRemaining();
-});
-
-startBtn.addEventListener("click", () => {
-    if (totalWeight.toFixed(2) !== "1.00") return;
-
-    const rand = Math.random();
-    let cumulative = 0;
-
-    for (let subject of subjects) {
-        cumulative += subject.weight;
-        if (rand <= cumulative) {
-            announce(subject.name);
-            alert("Selected: " + subject.name);
-            return;
+            subjects.push(subject);
+            renderSubject(subject);
+            updateSubjectCount();
+            updateTotalProbability();
         }
-    }
-});
 
-function announce(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = parseFloat(voiceSpeed.value);
-    speechSynthesis.speak(utterance);
-}
+        function renderSubject(subject) {
+            const subjectDiv = document.createElement('div');
+            subjectDiv.id = `subject-${subject.id}`;
+            subjectDiv.style.margin = '10px 0';
+            subjectDiv.style.padding = '10px';
+            subjectDiv.style.border = '1px solid #ccc';
 
-resetBtn.addEventListener("click", () => {
-    subjects = [];
-    totalWeight = 0;
-    subjectList.innerHTML = "";
-    updateRemaining();
-});
+            subjectDiv.innerHTML = `
+                <label>Name:</label>
+                <input type="text" class="subject-name" data-id="${subject.id}" value="${subject.name}" placeholder="Enter subject name">
+                
+                <label style="margin-left: 20px;">Probability:</label>
+                <input type="number" class="subject-probability" data-id="${subject.id}" value="${subject.probability}" 
+                       min="0" max="1" step="0.01" placeholder="0.00">
+                
+                <button class="remove-subject" data-id="${subject.id}" style="margin-left: 20px;">Remove</button>
+            `;
 
-updateRemaining();
-</script>
+            subjectsContainer.appendChild(subjectDiv);
 
+            // Add event listeners
+            const nameInput = subjectDiv.querySelector('.subject-name');
+            const probabilityInput = subjectDiv.querySelector('.subject-probability');
+            const removeButton = subjectDiv.querySelector('.remove-subject');
+
+            nameInput.addEventListener('input', (e) => {
+                const subject = subjects.find(s => s.id == e.target.dataset.id);
+                if (subject) {
+                    subject.name = e.target.value;
+                }
+            });
+
+            probabilityInput.addEventListener('input', (e) => {
+                const subject = subjects.find(s => s.id == e.target.dataset.id);
+                if (subject) {
+                    subject.probability = parseFloat(e.target.value) || 0;
+                    updateTotalProbability();
+                }
+            });
+
+            removeButton.addEventListener('click', (e) => {
+                removeSubject(e.target.dataset.id);
+            });
+        }
+
+        function removeSubject(subjectId) {
+            subjects = subjects.filter(s => s.id != subjectId);
+            const subjectDiv = document.getElementById(`subject-${subjectId}`);
+            if (subjectDiv) {
+                subjectDiv.remove();
+            }
+            updateSubjectCount();
+            updateTotalProbability();
+        }
+
+        function updateSubjectCount() {
+            subjectCount.textContent = `Subjects: ${subjects.length}/100`;
+        }
+
+        function updateTotalProbability() {
+            const total = subjects.reduce((sum, subject) => sum + subject.probability, 0);
+            totalProbabilitySpan.textContent = total.toFixed(2);
+
+            if (Math.abs(total - 1.0) < 0.001 && subjects.length > 0) {
+                probabilityWarning.textContent = '✓ Ready to start';
+                probabilityWarning.style.color = 'green';
+                startButton.disabled = false;
+            } else {
+                if (subjects.length === 0) {
+                    probabilityWarning.textContent = 'Add subjects first';
+                } else {
+                    probabilityWarning.textContent = 'Must equal 1.00';
+                }
+                probabilityWarning.style.color = 'red';
+                startButton.disabled = true;
+            }
+        }
+
+        function selectRandomSubject() {
+            const random = Math.random();
+            let cumulativeProbability = 0;
+
+            for (let subject of subjects) {
+                cumulativeProbability += subject.probability;
+                if (random <= cumulativeProbability) {
+                    return subject;
+                }
+            }
+
+            return subjects[subjects.length - 1];
+        }
+
+        function speak(text) {
+            return new Promise((resolve) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = parseFloat(voiceSpeedSelect.value);
+                utterance.onend = () => {
+                    resolve();
+                };
+                utterance.onerror = () => {
+                    resolve();
+                };
+                speechSynthesis.speak(utterance);
+            });
+        }
+
+        async function processSpeechQueue() {
+            if (isSpeaking || speechQueue.length === 0) {
+                return;
+            }
+
+            isSpeaking = true;
+            const text = speechQueue.shift();
+            await speak(text);
+            isSpeaking = false;
+
+            // Process next item in queue
+            if (speechQueue.length > 0) {
+                processSpeechQueue();
+            }
+        }
+
+        function callSubject() {
+            const subject = selectRandomSubject();
+            if (subject && subject.name) {
+                currentSubjectDisplay.textContent = subject.name;
+                
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+                speechQueue = [];
+                isSpeaking = false;
+                
+                // Add to queue and process
+                speechQueue.push(subject.name);
+                processSpeechQueue();
+            }
+        }
+
+        function startCalling() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            addSubjectBtn.disabled = true;
+
+            // Disable all inputs
+            document.querySelectorAll('.subject-name, .subject-probability, .remove-subject').forEach(el => {
+                el.disabled = true;
+            });
+
+            // Call first subject immediately
+            callSubject();
+
+            // Set up interval for subsequent calls
+            const interval = parseInt(callIntervalInput.value) * 1000;
+            intervalId = setInterval(callSubject, interval);
+        }
+
+        function stopCalling() {
+            if (!isRunning) return;
+
+            isRunning = false;
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            addSubjectBtn.disabled = false;
+
+            // Re-enable all inputs
+            document.querySelectorAll('.subject-name, .subject-probability, .remove-subject').forEach(el => {
+                el.disabled = false;
+            });
+
+            // Clear interval
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+
+            // Stop any ongoing speech
+            speechSynthesis.cancel();
+            speechQueue = [];
+            isSpeaking = false;
+
+            currentSubjectDisplay.textContent = '---';
+        }
+
+        // Initialize
+        updateSubjectCount();
+        updateTotalProbability();
+    </script>
 </body>
 </html>
 
